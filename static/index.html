@@ -86,6 +86,7 @@ main{max-width:800px;margin:0 auto;padding:24px 16px 80px}
 .option-item.selected{border-color:var(--primary);background:var(--primary-bg)}
 .option-item.correct{border-color:var(--success);background:var(--success-bg)}
 .option-item.wrong{border-color:var(--error);background:var(--error-bg)}
+.option-item.missed::after{content:"漏选";margin-left:auto;align-self:center;color:var(--error);font-size:12px;font-weight:700;white-space:nowrap}
 .option-item.disabled{pointer-events:none;opacity:.8}
 .option-label{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--gray-100);font-size:14px;font-weight:600;color:var(--gray-600);flex-shrink:0;transition:all .2s}
 .option-item.selected .option-label{background:var(--primary);color:#fff}
@@ -99,6 +100,8 @@ main{max-width:800px;margin:0 auto;padding:24px 16px 80px}
 .option-item.selected .checkbox::after{content:"✓";color:#fff;font-size:13px;font-weight:700}
 .option-item.correct .checkbox{border-color:var(--success);background:var(--success)}
 .option-item.correct .checkbox::after{content:"✓";color:#fff;font-size:13px;font-weight:700}
+.option-item.missed .checkbox{border-color:var(--success);background:#fff}
+.option-item.missed .checkbox::after{content:""}
 .option-item.wrong .checkbox{border-color:var(--error);background:var(--error)}
 .option-item.wrong .checkbox::after{content:"✗";color:#fff;font-size:13px;font-weight:700}
 
@@ -725,6 +728,8 @@ function renderQuestion() {
   const total = S.questions.length;
   const idx = S.currentIdx;
 
+  const modeLabels = { fixed: '📝 顺序刷题', random: '🔀 随机刷题', wrong: '🔄 错题重练' };
+  document.getElementById('quizInfo').textContent = modeLabels[S.mode] || '📖 刷题';
   document.getElementById('quizProgress').textContent = `${idx + 1} / ${total}`;
   document.getElementById('progressBar').style.width = `${((idx) / total) * 100}%`;
 
@@ -792,11 +797,15 @@ async function submitAnswer() {
   // Highlight correct/wrong
   const items = document.querySelectorAll('.option-item');
   const correctLabels = new Set(q.answer.split(''));
+  const isMulti = q.type === 'multi';
   items.forEach(el => {
     el.classList.add('disabled');
     const label = el.dataset.label;
-    if (correctLabels.has(label)) el.classList.add('correct');
-    else if (S.selectedLabels.has(label) && !correctLabels.has(label)) el.classList.add('wrong');
+    const isUser = S.selectedLabels.has(label);
+    const isCorr = correctLabels.has(label);
+    if (isCorr && isUser) el.classList.add('correct');
+    else if (isCorr) { el.classList.add('correct'); if (isMulti) el.classList.add('missed'); }
+    else if (isUser) el.classList.add('wrong');
   });
 
   // Show feedback
